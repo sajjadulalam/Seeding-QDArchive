@@ -1,1 +1,57 @@
 
+# ----------------------------
+# Python
+# ----------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Python build files
+build/
+dist/
+*.egg-info/
+
+# ----------------------------
+# VS Code
+# ----------------------------
+.vscode/
+
+# ----------------------------
+# OS files
+# ----------------------------
+.DS_Store
+Thumbs.db
+
+# ----------------------------
+# Database files
+# ----------------------------
+data/db/*.sqlite
+#data/db/*.db
+
+# ----------------------------
+# Exported CSVs
+# ----------------------------
+data/db/exports/*.csv
+
+# ----------------------------
+# Downloaded research data
+# (these can be very large)
+# ----------------------------
+data/downloads/
+
+# ----------------------------
+# Logs
+# ----------------------------
+*.log
+
+# ----------------------------
+# Temporary files
+# ----------------------------
+*.tmp
+*.temp
