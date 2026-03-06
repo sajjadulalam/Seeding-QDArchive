@@ -74,7 +74,7 @@ No license	        Metadata recorded only
 Closed license	    Dataset skipped
 Accepted licenses include CC0, CC-BY, CC-BY-SA, MIT, Apache.
 
-##Output
+Output
 After running the pipeline you will have:
 Downloaded datasets → data/downloads/
 Metadata database → data/db/acquisition.sqlite
