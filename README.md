@@ -1,5 +1,5 @@
 # Seeding QDArchive – Part 1: Data Acquisition Pipeline
-By: Sajjadul Alam
+By: Sajjadul Alam.<br>
     Friedrich Alexander University
 
 ## Overview
