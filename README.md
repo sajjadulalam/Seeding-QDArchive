@@ -16,25 +16,20 @@ Only datasets with **open licenses** are downloaded.
 qdarchive-seeding/
 │
 ├── README.md
-├── requirements.txt
 ├── .gitignore
+├── .github
 │
 ├── data/
-│   ├── downloads/            # downloaded research datasets
-│   └── db/
-│       ├── acquisition.sqlite
-│       └── exports/
-│           └── downloads.csv
-│
-├── scripts/
-│   ├── acquire_run.py
-│   └── export_csv.py
+│   ├── downloads/        
+│   └── database/
 │
 └── src/
-    └── qdarchive_seeding/
-        ├── utils.py
-        ├── db.py
-        └── acquire.py
+     ├── config.py
+     ├── database.py
+     ├── downloader.py
+     ├── main.py
+     ├── metadata.py
+     ├── scraper_zenodo.py
 ```
 
 
