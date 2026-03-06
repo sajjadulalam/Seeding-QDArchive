@@ -11,6 +11,8 @@ Only datasets with **open licenses** are downloaded.
 ---
 
 ## Project Structure
+
+```
 qdarchive-seeding/
 │
 ├── README.md
@@ -18,23 +20,23 @@ qdarchive-seeding/
 ├── .gitignore
 │
 ├── data/
-│ ├── downloads/ # downloaded research datasets
-│ └── db/
-│ ├── acquisition.sqlite
-│ └── exports/
-│ └── downloads.csv
+│   ├── downloads/            # downloaded research datasets
+│   └── db/
+│       ├── acquisition.sqlite
+│       └── exports/
+│           └── downloads.csv
 │
 ├── scripts/
-│ ├── acquire_run.py
-│ └── export_csv.py
+│   ├── acquire_run.py
+│   └── export_csv.py
 │
 └── src/
-└── qdarchive_seeding/
-├── utils.py
-├── db.py
-└── acquire.py
+    └── qdarchive_seeding/
+        ├── utils.py
+        ├── db.py
+        └── acquire.py
+```
 
----
 
 ## Installation
 
