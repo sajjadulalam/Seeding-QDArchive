@@ -1,31 +1,41 @@
 import sqlite3
-from .config import DB_PATH
+from config import DB_PATH
+
+
+def get_connection():
+    return sqlite3.connect(DB_PATH)
+
 
 def init_db():
-    """
-    Initialize SQLite database and create table if not exists.
-    """
-
-    # Ensure database directory exists
-    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_connection()
     cursor = conn.cursor()
 
     cursor.execute("""
-    CREATE TABLE IF NOT EXISTS projects (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        source_name TEXT NOT NULL,
-        source_url TEXT NOT NULL,
-        qda_file_url TEXT NOT NULL,
-        download_timestamp TEXT NOT NULL,
-        local_directory TEXT NOT NULL,
-        qda_filename TEXT NOT NULL,
-        license TEXT,
-        doi TEXT,
-        description TEXT,
-        file_type TEXT
-    )
+        CREATE TABLE IF NOT EXISTS projects (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            source_name TEXT NOT NULL,
+            source_url TEXT,
+            context_repository TEXT,
+            record_id TEXT,
+            title TEXT,
+            author TEXT,
+            year TEXT,
+            uploader_name TEXT,
+            uploader_email TEXT,
+            doi TEXT,
+            description TEXT,
+            license TEXT,
+            qda_file_url TEXT,
+            file_url TEXT,
+            local_directory TEXT,
+            local_filename TEXT,
+            local_file_path TEXT,
+            file_type TEXT,
+            is_qda_file INTEGER,
+            download_status TEXT,
+            downloaded_at TEXT,
+            UNIQUE(source_name, record_id, file_url)
+        )
     """)
 
     conn.commit()

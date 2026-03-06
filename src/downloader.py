@@ -1,23 +1,32 @@
+import re
 import requests
+from pathlib import Path
 
-def download_file(url, save_path):
-    """
-    Download a file from a URL and save it locally.
-    """
 
-    # Create folder if it doesn't exist
-    save_path.parent.mkdir(parents=True, exist_ok=True)
+def sanitize_filename(filename: str) -> str:
+    filename = filename.strip()
+    filename = re.sub(r'[<>:"/\\|?*]+', "_", filename)
+    return filename
+
+
+def download_file(url: str, destination: Path) -> bool:
+    headers = {
+        "User-Agent": "Seeding-QDArchive/1.0"
+    }
 
     try:
-        response = requests.get(url, timeout=30)
+        response = requests.get(url, headers=headers, stream=True, timeout=60)
+        response.raise_for_status()
 
-        if response.status_code == 200:
-            with open(save_path, "wb") as f:
-                f.write(response.content)
+        destination.parent.mkdir(parents=True, exist_ok=True)
 
-            print(f"Downloaded: {save_path.name}")
-        else:
-            print(f"Failed to download (status {response.status_code}): {url}")
+        with open(destination, "wb") as file:
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    file.write(chunk)
 
-    except Exception as e:
-        print(f"Error downloading {url}: {e}")
+        return True
+
+    except requests.RequestException as error:
+        print(f"Download failed for {url}: {error}")
+        return False
