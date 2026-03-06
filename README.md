@@ -22,57 +22,76 @@ qdarchive-seeding/
 ├── data/
 │   ├── downloads/        
 │   └── database/
+│       └── exports/
 │
 └── src/
      ├── config.py
      ├── database.py
      ├── downloader.py
+     ├── export_csv.py
      ├── main.py
      ├── metadata.py
-     ├── scraper_zenodo.py
+     └── scraper_zenodo.py
 ```
 
+## Features
+Searches Zenodo for qualitative research project files
+Detects records that contain QDA project files
+Downloads the full record folder for qualifying projects
+Stores file-level metadata in SQLite
+Exports metadata to CSV
 
 ## Installation
 
-Create a virtual environment and install dependencies.
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
 pip install -r requirements.txt
-Running the Pipeline
+### Run the project
+From the project root: python src/main.py
+### Export CSV
+After running the pipeline: python src/export_csv.py
+The CSV will be saved in: data/database/exports/projects.csv
+### Database location
+data/database/qdarchive_part1.db
+### Download location
+data/downloads/
 
-1. Add dataset URLs
-Edit:scripts/acquire_run.py
-Example: SEEDS = [
-{
-"qda_url": "https://example.org/project.zip",
-"license": "CC-BY-4.0",
-"title": "Interview Study Dataset"
+
+---
+
+## `src/config.py`
+
+```python
+from pathlib import Path
+
+# Project root
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Data directories
+DATA_DIR = BASE_DIR / "data"
+DOWNLOAD_DIR = DATA_DIR / "downloads"
+DATABASE_DIR = DATA_DIR / "database"
+EXPORT_DIR = DATABASE_DIR / "exports"
+
+# Database file
+DB_PATH = DATABASE_DIR / "qdarchive_part1.db"
+
+# Create directories if they do not exist
+DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
+DATABASE_DIR.mkdir(parents=True, exist_ok=True)
+EXPORT_DIR.mkdir(parents=True, exist_ok=True)
+
+# File extensions typically associated with QDA project files
+QDA_EXTENSIONS = {
+    ".qdpx", ".qpdx", ".qda", ".qda-project", ".qde", ".atlproj", ".nvp", ".nvpx"
 }
-]
 
-2. Run acquisition
-python scripts/acquire_run.py
-This will:
-create the SQLite database
-download datasets
-store files in data/downloads
-save metadata in the database
-
-3. Export metadata to CSV
-CSV output:data/db/exports/downloads.csv
-
-License Policy
-License	                  Action
-Open license	      Dataset downloaded
-No license	        Metadata recorded only
-Closed license	    Dataset skipped
-Accepted licenses include CC0, CC-BY, CC-BY-SA, MIT, Apache.
-
-Output
-After running the pipeline you will have:
-Downloaded datasets → data/downloads/
-Metadata database → data/db/acquisition.sqlite
-CSV export → data/db/exports/downloads.csv
+# Open-license keywords
+OPEN_LICENSE_KEYWORDS = {
+    "cc-by",
+    "cc-by-4.0",
+    "cc-by-sa",
+    "cc-by-sa-4.0",
+    "cc0",
+    "cc0-1.0",
+    "creative commons",
+    "open"
+}
