@@ -1,174 +1,225 @@
+import re
 import requests
 from bs4 import BeautifulSoup
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
-BASE_URL = "https://clio.columbia.edu"
-START_URL = "https://clio.columbia.edu/catalog"
-
-SEARCH_QUERIES = [
-    "interview",
-    "study time",
-    "shopping",
-    "oral history",
-    "transcript",
-    "audio",
-    "video",
-]
+GUIDE_URL = "https://guides.library.columbia.edu/oral_history/digital_collections"
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0"
 }
 
+# These phrases help find the useful links on the guide page and linked pages.
+KEYWORDS = [
+    "oral history",
+    "digital library collection",
+    "digital collections",
+    "interview",
+    "transcript",
+    "audio",
+    "video",
+]
 
-def extract_results_from_soup(soup, seen_urls):
-    datasets = []
-    new_count = 0
+FILE_EXTS = {
+    ".pdf", ".mp3", ".mp4", ".wav", ".avi", ".mov",
+    ".doc", ".docx", ".txt", ".csv", ".xml", ".json", ".zip"
+}
 
-    result_blocks = (
-        soup.select(".document") or
-        soup.select("li.document") or
-        soup.select("div.document") or
-        soup.select("article") or
-        soup.select("ol li")
-    )
 
-    for block in result_blocks:
-        title_link = (
-            block.select_one("a.title") or
-            block.select_one("h3 a") or
-            block.select_one("h2 a") or
-            block.select_one("a[href*='/catalog/']")
-        )
+def normalize_text(value: str) -> str:
+    return " ".join((value or "").split()).strip()
 
-        if not title_link:
+
+def looks_like_file(url: str) -> bool:
+    path = urlparse(url).path.lower()
+    return any(path.endswith(ext) for ext in FILE_EXTS)
+
+
+def extract_year_from_text(text: str) -> str:
+    if not text:
+        return ""
+    m = re.search(r"\b(19|20)\d{2}\b", text)
+    return m.group(0) if m else ""
+
+
+def is_relevant_link(text: str, href: str) -> bool:
+    text_l = (text or "").lower()
+    href_l = (href or "").lower()
+
+    if any(k in text_l for k in KEYWORDS):
+        return True
+
+    if any(k.replace(" ", "_") in href_l or k.replace(" ", "-") in href_l for k in KEYWORDS):
+        return True
+
+    if looks_like_file(href):
+        return True
+
+    return False
+
+
+def collect_links_from_page(url: str) -> list[dict]:
+    try:
+        r = requests.get(url, headers=HEADERS, timeout=30)
+        r.raise_for_status()
+    except Exception as e:
+        print(f"Could not fetch page: {url} -> {e}")
+        return []
+
+    soup = BeautifulSoup(r.text, "html.parser")
+    results = []
+    seen = set()
+
+    for a in soup.select("a[href]"):
+        href = (a.get("href") or "").strip()
+        text = normalize_text(a.get_text(" ", strip=True))
+        if not href:
             continue
 
-        title = " ".join(title_link.get_text(" ", strip=True).split())
-        if not title:
+        full_url = urljoin(url, href)
+        key = (text, full_url)
+        if key in seen:
             continue
 
-        online_link = None
-
-        for a in block.select("a[href]"):
-            href = (a.get("href") or "").strip()
-            text = " ".join(a.get_text(" ", strip=True).split()).lower()
-
-            if not href:
-                continue
-
-            full_href = urljoin(BASE_URL, href)
-
-            if text == "online" or "online" in text:
-                online_link = full_href
-                break
-
-        if not online_link:
-            for a in block.select("a[href]"):
-                href = (a.get("href") or "").strip()
-                if not href:
-                    continue
-
-                full_href = urljoin(BASE_URL, href)
-                href_lower = full_href.lower()
-
-                if (
-                    "handle.net" in href_lower
-                    or "resolver.library.columbia.edu" in href_lower
-                    or "doi.org" in href_lower
-                ):
-                    online_link = full_href
-                    break
-
-        if not online_link:
+        if not is_relevant_link(text, full_url):
             continue
 
-        if online_link in seen_urls:
-            continue
-
-        seen_urls.add(online_link)
-        new_count += 1
-
-        datasets.append({
-            "id": "",
-            "title": title,
-            "url": online_link,
-            "year": "",
-            "description": "",
+        seen.add(key)
+        results.append({
+            "title": text or full_url,
+            "url": full_url,
         })
 
-    return datasets, new_count
+    return results
 
 
-def find_next_page_url(soup, current_url):
-    # Try common "Next" selectors
-    candidates = []
+def extract_records_from_candidate_page(url: str) -> list[dict]:
+    """
+    Try to extract record-like links from a linked Columbia page.
+    This is intentionally flexible because Columbia pages may be LibGuides,
+    library content pages, resolver pages, or collection pages.
+    """
+    try:
+        r = requests.get(url, headers=HEADERS, timeout=30)
+        r.raise_for_status()
+    except Exception as e:
+        print(f"Could not fetch candidate page: {url} -> {e}")
+        return []
 
-    candidates.extend(soup.select("a[rel='next']"))
-    candidates.extend(soup.select("a.next_page"))
-    candidates.extend(soup.select("a[aria-label='Next']"))
-    candidates.extend(soup.select("a"))
+    content_type = (r.headers.get("Content-Type") or "").lower()
+
+    # Direct file URL
+    if "text/html" not in content_type and looks_like_file(url):
+        filename = urlparse(url).path.rsplit("/", 1)[-1] or "download"
+        return [{
+            "id": "",
+            "title": filename,
+            "url": url,
+            "year": "",
+            "description": "",
+        }]
+
+    soup = BeautifulSoup(r.text, "html.parser")
+    records = []
+    seen = set()
+
+    # Generic record/item selectors
+    candidates = soup.select(
+        "a[href], h1 a[href], h2 a[href], h3 a[href], "
+        "article a[href], li a[href], .views-row a[href], .card a[href]"
+    )
 
     for a in candidates:
         href = (a.get("href") or "").strip()
-        text = " ".join(a.get_text(" ", strip=True).split()).lower()
+        title = normalize_text(a.get_text(" ", strip=True))
 
         if not href:
             continue
 
-        if text in {"next", "next »", "›", "»"} or "next" in text:
-            return urljoin(current_url, href)
+        full_url = urljoin(url, href)
+        title_l = title.lower()
+        href_l = full_url.lower()
 
-    return None
+        # Keep oral-history / interview / media / transcript / file-ish links
+        if not (
+            any(k in title_l for k in KEYWORDS)
+            or any(k.replace(" ", "-") in href_l or k.replace(" ", "_") in href_l for k in KEYWORDS)
+            or looks_like_file(full_url)
+        ):
+            continue
+
+        if full_url in seen:
+            continue
+
+        seen.add(full_url)
+
+        records.append({
+            "id": "",
+            "title": title or full_url,
+            "url": full_url,
+            "year": extract_year_from_text(title),
+            "description": "",
+        })
+
+    return records
 
 
-def search_columbia(max_pages=20):
+def search_columbia(max_follow_links=20):
     datasets = []
     seen_urls = set()
 
-    for query in SEARCH_QUERIES:
-        print(f"Columbia query: {query}")
+    print(f"Fetching Columbia guide page: {GUIDE_URL}")
+    guide_links = collect_links_from_page(GUIDE_URL)
+    print(f"Found {len(guide_links)} relevant link(s) on guide page")
 
-        params = {
-            "q": query,
-            "datasource": "catalog",
-            "source": "catalog",
-            "search_field": "all_fields",
-        }
+    followed = 0
 
-        try:
-            r = requests.get(START_URL, params=params, headers=HEADERS, timeout=30)
-            r.raise_for_status()
-        except Exception as e:
-            print(f"  request failed -> {e}")
+    for link in guide_links:
+        if followed >= max_follow_links:
+            break
+
+        candidate_url = link["url"]
+
+        # Stay focused on Columbia/library-related targets
+        if not any(host in candidate_url for host in [
+            "columbia.edu",
+            "library.columbia.edu",
+            "guides.library.columbia.edu",
+            "resolver.library.columbia.edu",
+        ]):
             continue
 
-        current_url = r.url
-        total_new_for_query = 0
-        page_no = 1
+        print(f"Following: {candidate_url}")
+        followed += 1
 
-        while current_url and page_no <= max_pages:
-            try:
-                r = requests.get(current_url, headers=HEADERS, timeout=30)
-                r.raise_for_status()
-            except Exception as e:
-                print(f"  page {page_no}: request failed -> {e}")
-                break
+        records = extract_records_from_candidate_page(candidate_url)
 
-            soup = BeautifulSoup(r.text, "html.parser")
+        if not records:
+            # If the guide page link itself is useful, still keep it as a collection-level record
+            title = link["title"]
+            if candidate_url not in seen_urls:
+                seen_urls.add(candidate_url)
+                datasets.append({
+                    "id": "",
+                    "title": title,
+                    "url": candidate_url,
+                    "year": "",
+                    "description": "",
+                })
+            continue
 
-            page_results, page_new = extract_results_from_soup(soup, seen_urls)
-            datasets.extend(page_results)
-            total_new_for_query += page_new
-
-            print(f"  page {page_no}: {page_new} new record(s)")
-
-            next_url = find_next_page_url(soup, r.url)
-            if not next_url or next_url == current_url:
-                break
-
-            current_url = next_url
-            page_no += 1
-
-        print(f"  total for query '{query}': {total_new_for_query}")
+        for record in records:
+            record_url = record["url"]
+            if record_url in seen_urls:
+                continue
+            seen_urls.add(record_url)
+            datasets.append(record)
 
     return datasets
+
+
+if __name__ == "__main__":
+    results = search_columbia()
+    print(f"\nTotal Columbia records: {len(results)}")
+    for row in results[:20]:
+        print(row)
