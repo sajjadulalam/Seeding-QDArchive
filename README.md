@@ -20,22 +20,29 @@ qdarchive-seeding/
 ├── .github
 │
 ├── data/
-│   ├── downloads/        
+│   ├── downloads/
+        ├── columbia/
+        └── sada/        
 │   └── database/
+│       ├──qdarchive_part1.db
 │       └── exports/
+│           └── projects.csv
 │
 └── src/
+     ├──__init__.py
      ├── config.py
      ├── database.py
      ├── downloader.py
      ├── export_csv.py
      ├── main.py
      ├── metadata.py
+     ├── scraper_columbia.py
+     ├── scraper_sada.py
      └── scraper_zenodo.py
 ```
 
 ## Features
-Searches Zenodo for qualitative research project files
+Searches Zenodo/columbia/sada for qualitative research project files
 Detects records that contain QDA project files
 Downloads the full record folder for qualifying projects
 Stores file-level metadata in SQLite
