@@ -59,7 +59,8 @@ From the project root: python src/main.py
 ### Export CSV
 From the project root: python src/export_csv.py
 
-![Screenshot 2026-03-31 131449](https://github.com/user-attachments/assets/cd467511-5615-4816-877c-802098155a6b)
+![Screenshot 2026-03-31 131640](https://github.com/user-attachments/assets/8c084c00-338c-407c-b625-588672182c5d)
+
 
 After running the pipeline: python src/export_csv.py
 The CSV will be saved in: data/database/exports/projects.csv
