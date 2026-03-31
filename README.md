@@ -46,7 +46,10 @@ Exports metadata to CSV
 pip install -r requirements.txt
 ### Run the project
 From the project root: python src/main.py
+![Screenshot 2026-03-31 131449](https://github.com/user-attachments/assets/04dd9fcd-3af5-420c-963e-04e26f79553c)
+
 ### Export CSV
+![Screenshot 2026-03-31 131449](https://github.com/user-attachments/assets/cd467511-5615-4816-877c-802098155a6b)
 After running the pipeline: python src/export_csv.py
 The CSV will be saved in: data/database/exports/projects.csv
 ### Database location
