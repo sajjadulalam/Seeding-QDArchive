@@ -10,7 +10,7 @@ DATABASE_DIR = DATA_DIR / "database"
 EXPORT_DIR = DATABASE_DIR / "exports"
 
 # Database file
-DB_PATH = DATABASE_DIR / "qdarchive_part1.db"
+DB_PATH = DATABASE_DIR / "23129194-seeding.db"
 
 # Create directories if they don't exist
 DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
