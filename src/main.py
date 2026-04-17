@@ -402,7 +402,7 @@ def process_record(record: dict, source_name: str):
 
         destination = record_folder / safe_filename
         success = download_file(file_url, destination)
-        status = "success" if success else "failed"
+        status = "succeeded" if success else "failed"
 
         insert_file(
             project_id=project_id,
