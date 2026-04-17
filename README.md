@@ -24,7 +24,7 @@ qdarchive-seeding/
         ├── columbia/
         └── sada/        
 │   └── database/
-│       ├──qdarchive_part1.db
+│       ├──23129194-seeding.db
 │       └── exports/
 │           └── projects.csv
 │
